@@ -17,9 +17,8 @@ type Lexer struct {
 
 func NewLexer(input string) *Lexer {
   l := &Lexer {
-    lex.NewStringLexer(input),
+    lex.NewStringLexer(input, lexText),
   }
-  l.SetLexFn("__START__", lexText)
   return l
 }
 
