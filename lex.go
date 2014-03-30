@@ -5,7 +5,7 @@ import (
 )
 
 const (
-  ItemText  lex.LexItemType = lex.ItemDefaultMax + 1 + iota
+  ItemText  lex.ItemType = lex.ItemDefaultMax + 1 + iota
   ItemNumber
   ItemMinus
   ItemComma

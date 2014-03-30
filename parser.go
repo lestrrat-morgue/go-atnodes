@@ -79,25 +79,42 @@ fmt.Println("parsePermutation")
     p.unexpected("Expected '[', got %s", openBracket)
   }
 
-  num := p.Consume()
-  if num.Type() != ItemNumber {
-    p.unexpected("Expected number, got %s", num)
-  }
+  newRange := mapset.NewSet()
+  for {
+    num := p.Consume()
+    if num.Type() != ItemNumber {
+      p.unexpected("Expected number, got %s", num)
+    }
 
-  if p.Peek().Type() == ItemMinus {
-    // It's a range!
-    p.Backup2(num)
-    p.parseRange(s)
+    switch p.Peek().Type() {
+    case ItemMinus:
+      // It's a range!
+      p.Backup2(num)
+      p.parseRange(&newRange)
+    default:
+      // It's a single element
+      newRange.Add(num.Value())
+    }
+
+    // This may be followed by a comma, which would mean that there are
+    // more rules to be applied
+    if p.Peek().Type() != ItemComma {
+      break
+    }
+    p.Consume() // consume the comma
   }
 
   closeBracket := p.Consume()
   if closeBracket.Type() != ItemCloseSquareBracket {
     p.unexpected("Expected ']', got %s", openBracket)
   }
+
+  *s = p.permute(s, newRange)
 }
 
 func (p *Parser) parseRange(s *mapset.Set) {
 fmt.Println("parseRange")
+
   from := p.Consume()
   if from.Type() != ItemNumber {
     p.unexpected("Expected number, got %s", from)
@@ -121,16 +138,24 @@ fmt.Println("parseRange")
 fmt.Printf("Parse range %d -> %d\n", fromInt, toInt)
 
   newSet := mapset.NewSet()
+  for i := fromInt; i <= toInt; i++ {
+    newSet.Add(strconv.FormatInt(int64(i), 10))
+  }
+  *s = s.Union(newSet)
+}
+
+func (p *Parser) permute(s *mapset.Set, newSet mapset.Set) mapset.Set {
   if s.Cardinality() <= 0 {
-    for i := fromInt; i <= toInt; i++ {
-      newSet.Add(i)
-    }
-  } else {
-    for prefix := range s.Iter() {
-      for i := fromInt; i <= toInt; i++ {
-        newSet.Add(fmt.Sprintf("%s%d", prefix.(string), i))
-      }
+    // set s is empty, just return newSet
+    return newSet
+  }
+  // otherwise, take all elements in set s, and create new set using
+  // contents of newSet
+  ret := mapset.NewSet()
+  for prefix := range s.Iter() {
+    for suffix := range newSet.Iter() {
+      ret.Add(fmt.Sprintf("%s%s", prefix.(string), suffix.(string)))
     }
   }
-  *s = newSet
+  return ret
 }
