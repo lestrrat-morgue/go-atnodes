@@ -4,6 +4,7 @@ import (
   "fmt"
   "github.com/deckarep/golang-set"
   "github.com/lestrrat/go-lex"
+  "sort"
   "strconv"
 )
 
@@ -23,7 +24,6 @@ func (p *Parser) ParseString(template string) []string {
 
   s := mapset.NewSet()
   for item := p.Peek(); item.Type() != lex.ItemEOF; item = p.Peek() {
-fmt.Printf("%#v\n", item)
     switch item.Type() {
     case ItemText:
       p.parseTerm(&s)
@@ -32,7 +32,6 @@ fmt.Printf("%#v\n", item)
     default:
       p.unexpected("Unexpected item found: %s", item)
     }
-    fmt.Printf("%v\n", s)
   }
 
   expanded := make([]string, s.Cardinality())
@@ -41,6 +40,8 @@ fmt.Printf("%#v\n", item)
     expanded[i] = s.(string)
     i++
   }
+
+  sort.StringSlice(expanded).Sort()
   return expanded
 }
 
@@ -54,7 +55,6 @@ func (p *Parser) unexpected(format string, args ...interface{}) {
 }
 
 func (p *Parser) parseTerm(s *mapset.Set) {
-fmt.Println("parseTerm")
   term := p.Consume()
   if term.Type() != ItemText {
     p.unexpected("Expected text, got %s", term)
@@ -73,7 +73,6 @@ fmt.Println("parseTerm")
 }
 
 func (p *Parser) parsePermutation(s *mapset.Set) {
-fmt.Println("parsePermutation")
   openBracket := p.Consume()
   if openBracket.Type() != ItemOpenSquareBracket {
     p.unexpected("Expected '[', got %s", openBracket)
@@ -113,7 +112,6 @@ fmt.Println("parsePermutation")
 }
 
 func (p *Parser) parseRange(s *mapset.Set) {
-fmt.Println("parseRange")
 
   from := p.Consume()
   if from.Type() != ItemNumber {
@@ -135,7 +133,6 @@ fmt.Println("parseRange")
   if err != nil {
     p.unexpected("Expected int, parse error: %s", err)
   }
-fmt.Printf("Parse range %d -> %d\n", fromInt, toInt)
 
   newSet := mapset.NewSet()
   for i := fromInt; i <= toInt; i++ {
